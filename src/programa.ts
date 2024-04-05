@@ -2,38 +2,17 @@ import './scss/estilos.scss';
 import { mat4 } from 'gl-matrix';
 import vert from './imagenes.vert';
 import frag from './imagenes.frag';
+import { crearPrograma } from './utilidades/ayudas';
 
 function main() {
   const lienzo = document.getElementById('lienzo') as HTMLCanvasElement;
   const gl = lienzo.getContext('webgl2') as WebGL2RenderingContext;
-
-  const vShader = gl.createShader(gl.VERTEX_SHADER);
-  if (!vShader) return;
-  gl.shaderSource(vShader, vert);
-  gl.compileShader(vShader);
-  let ok = gl.getShaderParameter(vShader, gl.COMPILE_STATUS);
-  if (!ok) console.log(gl.getShaderInfoLog(vShader));
-
-  const fShader = gl.createShader(gl.FRAGMENT_SHADER);
-  if (!fShader) return;
-  gl.shaderSource(fShader, frag);
-  gl.compileShader(fShader);
-  ok = gl.getShaderParameter(fShader, gl.COMPILE_STATUS);
-  if (!ok) console.log(gl.getShaderInfoLog(fShader));
-
-  const programa = gl.createProgram();
-  if (!programa) return;
-  gl.attachShader(programa, vShader);
-  gl.attachShader(programa, fShader);
-  gl.linkProgram(programa);
-  ok = gl.getProgramParameter(programa, gl.LINK_STATUS);
-  if (!ok) console.log(gl.getProgramInfoLog(programa));
+  const programa = crearPrograma(gl, vert, frag);
 
   gl.useProgram(programa);
 
   const aPositionLocation = gl.getAttribLocation(programa, 'aPosicion');
   const aTexCoordLocation = gl.getAttribLocation(programa, 'aTexCoord');
-
   const columnas = 6;
   const filas = 4;
   const numCuadros = columnas * filas;
@@ -41,18 +20,17 @@ function main() {
   const altoImg = 2000;
   const anchoFotograma = anchoImg / columnas;
   const altoFotograma = altoImg / filas;
-  lienzo.width = anchoFotograma;
-  lienzo.height = altoFotograma;
-  console.log(anchoFotograma, altoFotograma);
+  lienzo.width = window.innerWidth;
+  lienzo.height = window.innerHeight;
 
   const verticesFotograma = [-1, -1, 1, -1, -1, 1, 1, 1];
-  const vertPositions: number[] = [];
+  const verticesPosiciones: number[] = [];
 
-  for (let i = 0; i < numCuadros; i++) vertPositions.push(...verticesFotograma);
+  for (let i = 0; i < numCuadros; i++) verticesPosiciones.push(...verticesFotograma);
 
   const vertPosVBO = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertPosVBO);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertPositions), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verticesPosiciones), gl.STATIC_DRAW);
   gl.vertexAttribPointer(aPositionLocation, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(aPositionLocation);
 
@@ -95,7 +73,6 @@ function main() {
   const uMvpMatrixLocation = gl.getUniformLocation(programa, 'uMvpMatrix');
   const uSamplerLocation = gl.getUniformLocation(programa, 'uSampler');
   gl.uniform1i(uSamplerLocation, 0);
-
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   gl.clearColor(0.93, 0.95, 0.98, 1);
@@ -127,13 +104,11 @@ function main() {
     gl.uniformMatrix4fv(uMvpMatrixLocation, false, mvpMatrix);
 
     lastTime = Date.now();
-    animationLoop();
+    ciclo();
   };
   image.src = '/diego_6x4-4251x2000_1.webp';
 
-  function animationLoop(): void {
-    requestAnimationFrame(animationLoop);
-
+  function ciclo(): void {
     currentTime = Date.now();
     deltaTime = currentTime - lastTime;
     lastTime = currentTime;
@@ -150,6 +125,8 @@ function main() {
         drawingIndex = 0;
       }
     }
+
+    requestAnimationFrame(ciclo);
   }
 }
 
